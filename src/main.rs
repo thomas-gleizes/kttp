@@ -1,15 +1,14 @@
 mod http;
 
+use crate::http::server::Server;
 use http::request::Request;
 use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{TcpStream};
 
 fn handle_client(mut stream: TcpStream) {
     let mut buffer = [0; 1024]; // Tampon pour lire les données
 
     let request = Request::new(&mut stream);
-
-    request.parse_content();
 
     match stream.read(&mut buffer) {
         Ok(bytes_read) => {
@@ -24,13 +23,12 @@ fn handle_client(mut stream: TcpStream) {
     }
 }
 
-fn main() -> std::io::Result<()> {
-    println!("Serveur HTTP en écoute sur le port 80...");
-    let listener = TcpListener::bind("0.0.0.0:80")?;
+fn main() {
+    let server = Server::new("0.0.0.0:80");
 
-    // accept connections and process them serially
-    for stream in listener.incoming() {
-        handle_client(stream?);
-    }
-    Ok(())
+    // server.get("/", |mut context| {
+    //     context.response.send("<h1>Hello, world!</h1>".to_string());
+    // });
+
+    server.listen()
 }

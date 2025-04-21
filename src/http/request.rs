@@ -1,10 +1,15 @@
+use crate::http::headers::Headers;
 use crate::http::method::Method;
+use crate::http::status_code::StatusCode;
 use std::collections::HashMap;
 use std::io::Read;
 use std::net::{IpAddr, TcpStream};
 
 pub struct Request {
     pub ip_addr: IpAddr,
+    pub headers: Headers,
+    pub method: Method,
+    pub path: String,
 
     stream: TcpStream,
     content: String,
@@ -13,11 +18,15 @@ pub struct Request {
 impl Request {
     pub fn new(stream: &mut TcpStream) -> Self {
         let content = Self::read_content(stream).expect("Failed to read content");
+        let (method, path, headers) = Self::parse_content(content.clone());
 
         Self {
             stream: stream.try_clone().unwrap(),
             ip_addr: stream.peer_addr().expect("Failed to get IP").ip(),
-            content: content,
+            content,
+            headers: Headers::new(),
+            method,
+            path,
         }
     }
 
@@ -27,8 +36,8 @@ impl Request {
         Ok(String::from_utf8_lossy(&buffer[..bytes_read]).to_string())
     }
 
-    pub fn parse_content(self) -> (Method, String, HashMap<String, String>) {
-        let lines: Vec<&str> = self.content.split("\r\n").collect();
+    fn parse_content(content: String) -> (Method, String, Headers) {
+        let lines: Vec<&str> = content.split("\r\n").collect();
         let request_line = lines[0];
         let mut parts = request_line.split_whitespace();
 
@@ -40,7 +49,7 @@ impl Request {
         println!("Path: {}", path);
         println!("Version: {}", version);
 
-        // let headers = HashMap::new();
+        let mut headers = Headers::new();
 
         for line in &lines[1..] {
             if line.is_empty() {
@@ -49,14 +58,10 @@ impl Request {
             println!("Header: {}", line);
 
             let t = line.split(": ").collect::<Vec<&str>>();
-            let value = t.get(1).unwrap_or(&"").to_string();
-            let key = t.get(0).unwrap_or(&"").to_string();
 
-            print!("{} : {}", key, value);
-
-            // headers.insert(line.to_string(), line.to_string());
+            headers.add(t[0].to_string(), t[1].to_string());
         }
 
-        (Method::Get, String::from(path), HashMap::new())
+        (Method::Get, String::from(path), headers)
     }
 }
