@@ -25,7 +25,8 @@ fn handle_client(mut stream: TcpStream) {
 }
 
 fn main() -> std::io::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:3000")?;
+    println!("Serveur HTTP en écoute sur le port 80...");
+    let listener = TcpListener::bind("0.0.0.0:80")?;
 
     // accept connections and process them serially
     for stream in listener.incoming() {
