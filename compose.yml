@@ -1,0 +1,8 @@
+services:
+  app:
+    build: .
+    container_name: kttp
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: cargo watch -x run
